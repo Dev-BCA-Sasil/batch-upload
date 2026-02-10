@@ -24,7 +24,13 @@ new Worker('csv-splitter', async (job) => {
   for await (const row of stream) {
     batch.push(row);
     if (batch.length >= BATCH_SIZE) {
-      await insertQueue.add('insert-batch', { rows: batch });
+      await insertQueue.add('insert-batch', { rows: batch }, {
+        removeOnComplete: true,
+        removeOnFail: 1000,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 }
+      });
+
       batch = [];
     }
   }
